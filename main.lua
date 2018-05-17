@@ -106,8 +106,16 @@ function drawSliders()
 		local currentID = k
 		local currentSlider=sliders[currentID]
 		love.graphics.setColor(255,255,255)
+		if currentSlider.varName==var.r then
+			love.graphics.setColor(variables.r,0,0)
+		elseif currentSlider.varName==var.g then
+			love.graphics.setColor(0,variables.g,0)
+		elseif currentSlider.varName==var.b then
+			love.graphics.setColor(0,0,variables.b)
+		end
+		
 		love.graphics.rectangle("fill", sliders[currentID].xPos, sliders[currentID].yPos, sliders[currentID].width, sliders[currentID].height)
-		love.graphics.setColor(255,0,0) 
+		love.graphics.setColor(255,0,0)
 		local pcent=(variables[sliders[currentID].varName]-sliders[currentID].lowerBound)/(sliders[currentID].upperBound-sliders[currentID].lowerBound)
 		love.graphics.circle("fill",sliders[currentID].xPos+10+pcent*(sliders[currentID].width-20) , sliders[currentID].yPos+sliders[currentID].height/2, 10)
 		sliders[currentID].circX=sliders[currentID].xPos+10+pcent*(sliders[currentID].width-20)
@@ -155,15 +163,19 @@ end
 
 function love.keypressed(key)
 	if key == "0" or key == "1" or key == "2" or key == "3" or key == "4" or key == "5" or key == "6" or key == "7" or key == "8" or key == "9" then
-		if typed==false then
-			currentText=""
-			typed=true
+		if lastSlider then
+			if typed==false then
+				currentText=""
+				typed=true
+			end
+			currentText=currentText..key
 		end
-		currentText=currentText..key
 	end
 	if key=="return" then
 		if typed then
-			variables[sliders[lastSlider].varName]=currentText+1
+			if tonumber(currentText)>=sliders[lastSlider].lowerBound and tonumber(currentText)<=sliders[lastSlider].upperBound then
+				variables[sliders[lastSlider].varName]=currentText+1
+			end
 			currentText=""
 			typed=false
 		end
