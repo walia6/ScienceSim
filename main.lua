@@ -58,17 +58,19 @@ function distance ( x1, y1, x2, y2 )
 end
 
 function love.load()
+	inch=0.0254
 	currentText=""
 	typed=false
 	lastSlider=nil
 	lastX=0
 	lastY=0
 	selectedSlider=nil
+	winWidth,winHeight=love.graphics.getDimensions()
 	math.randomseed(os.time())
 	variables={
-		r=128,
+		r=50,
 		b=128,
-		g=128,
+		g=1400000,
 		test=750
 	}
 
@@ -83,10 +85,39 @@ function love.load()
 	}
 
 	sliderID={}
-	sliderID.r    =slider.new(100,200,161,050,var.r   ,000,0255,1)
-	sliderID.g    =slider.new(100,275,161,050,var.g   ,000,0255,1)
+	sliderID.r    =slider.new(100,200,161,050,var.r   ,-50,0075,1)
+	sliderID.g    =slider.new(100,275,161,050,var.g   ,000,2800000,1)
 	sliderID.b    =slider.new(100,350,161,050,var.b   ,000,0255,1)
 	sliderID.test =slider.new(400,100,375,050,var.test,500,1000,1)
+
+	--PHYSICS START
+	love.physics.setMeter(50)
+	world=love.physics.newWorld(0,9.81*100,true)
+
+	objects={}
+
+
+	objects.ground={}
+	objects.ground.body=love.physics.newBody(world,winWidth/2,winHeight-50/2)
+	objects.ground.shape=love.physics.newRectangleShape(winWidth,50)
+	objects.ground.fixture=love.physics.newFixture(objects.ground.body,objects.ground.shape)
+	objects.ground.fixture:setFriction(0.95)
+
+
+
+	objects.block={}
+	objects.block.body=love.physics.newBody(world,winWidth/4*3,winHeight-50-74/2*inch*love.physics.getMeter()-25,"dynamic")
+	objects.block.shape=love.physics.newRectangleShape( 1, 1, 81*inch*love.physics.getMeter(),130*inch*love.physics.getMeter(), math.rad(0) )
+	objects.block.fixture=love.physics.newFixture(objects.block.body,objects.block.shape,5)
+	blockX,blockY,blockMass,blockInertia=objects.block.body:getMassData( )
+	objects.block.body:setMassData( blockX, blockY, 2656, 4289434 )
+	blockX,blockY,blockMass,blockInertia=objects.block.body:getMassData( )
+	objects.block.fixture:setFriction(0.95)
+	objects.block.fixture:setRestitution(0)
+
+
+
+	--PHYSICS END
 end
 
 function love.update(dt)
@@ -99,6 +130,16 @@ function love.update(dt)
 		end
 		variables[sliders[selectedSlider].varName]=1+(mouseX-sliders[selectedSlider].xPos-10)*sliders[selectedSlider].pixVal+sliders[selectedSlider].lowerBound+1
 	end
+
+	--PHYSICS START
+	world:update(dt*1)
+	if love.keyboard.isDown("space") then
+		objects.block.body:applyForce( variables.g, 0, objects.block.body:getX()-50, objects.block.body:getY()-25+variables.r-1 )
+	end
+
+
+
+	--PHYSICS END
 end
 
 function drawSliders()
@@ -136,12 +177,34 @@ function love.draw()
 	for k,v in pairs(variables) do
 		love.graphics.print(k..": "..(v-1), 400, 315+15*cnt)
 		cnt=cnt+1
+	end--if love.keyboard.isDown("space")
+	cenX,cenY=objects.block.body:getWorldCenter()
+	love.graphics.print("lastX: "..lastX,400,315+15*(cnt)) cnt=cnt+1
+	love.graphics.print("lastY: "..lastY,400,315+15*(cnt)) cnt=cnt+1
+	love.graphics.print("winWidth: "..winWidth,400,315+15*(cnt)) cnt=cnt+1
+	love.graphics.print("winHeight: "..winHeight,400,315+15*(cnt)) cnt=cnt+1
+	love.graphics.print("cenX: "..cenX,400,315+15*(cnt)) cnt=cnt+1
+	love.graphics.print("cenY: "..cenY,400,315+15*(cnt)) cnt=cnt+1
+	if love.keyboard.isDown("space") then
+		love.graphics.print("space",400,315+15*(cnt)) cnt=cnt+1
 	end
-	love.graphics.print("lastX: "..lastX,400,315+15*(cnt))
-	love.graphics.print("lastY: "..lastY,400,315+15*(cnt+1))
-	love.graphics.setColor(variables.r-1, variables.g-1, variables.b-1)
-	love.graphics.rectangle("fill", 300, 400, 100, 100)
+	if blockInertia then
+		love.graphics.print("blockInertia: "..blockInertia,400,315+15*(cnt)) cnt=cnt+1
+	end
 	love.graphics.setColor(255,255,255)
+
+	--PHYSICS START
+	love.graphics.setColor(math.floor(0.28*255+0.5), math.floor(0.63*255+0.5), math.floor(0.05*255+0.5)) 
+	love.graphics.polygon("fill", objects.ground.body:getWorldPoints(objects.ground.shape:getPoints()))
+
+	love.graphics.setColor(255,255,255)
+	love.graphics.polygon("fill", objects.block.body:getWorldPoints(objects.block.shape:getPoints()))
+	love.graphics.setColor(255,0,0)
+	love.graphics.rectangle("fill", cenX-2, cenY-2, 4, 4)
+	love.graphics.setColor(0,255,0)
+	love.graphics.rectangle("fill",objects.block.body:getX()-50-2,objects.block.body:getY()-25+variables.r-1,4,4)
+
+	--PHYSICS END
 end
 
 function love.mousepressed(x,y,button)
